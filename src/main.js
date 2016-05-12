@@ -69,12 +69,33 @@ function readDockerContainers(cb) {
 
 function processContainerInformation(dockerState) {
 	let httpRoutes = [];
+	let tcpRoutes = [];
 	dockerState.forEach((container) => {
 		var lbl = function(name) {
 			return container.Labels[`de.bfischerman.proxy-${name}`];
 		};
 		if(lbl("mode") == "tcp") {
-
+			console.log('deteced tcp')
+			let port;
+			if(lbl("target")) {
+				container.Ports.forEach((containerPort) => {
+					if(containerPort.PrivatePort.toString() == lbl("target")) {
+						port = containerPort;
+					}
+				});
+			} else if(container.Ports.length == 1) {
+				port = container.ports[0];
+			} else {
+				console.log("More than one port available!", container);
+			}
+			if(port) {
+				let route = {
+					name: container.Id,
+					source: lbl("source"),
+					target: port.PublicPort.toString()
+				}
+				tcpRoutes.push(route);
+			}
 
 		} else if(lbl("mode") == "http" || lbl("url")) {
 			let url = parseUrl('http://' + lbl("url"), true, true);
@@ -90,7 +111,7 @@ function processContainerInformation(dockerState) {
 			} else if(container.Ports.length == 1) {
 				port = container.ports[0];
 			} else {
-				console.log("More than one ports available!");
+				console.log("More than one port available!");
 			}
 			if(port) {
 				let route = {
@@ -108,7 +129,8 @@ function processContainerInformation(dockerState) {
 		}
 	});
 	return {
-		httpRoutes: httpRoutes
+		httpRoutes: httpRoutes,
+		tcpRoutes: tcpRoutes
 	};
 }
 

@@ -30,7 +30,6 @@ frontend https
     {{?}}
     {{~}}
 
-
 {{~it.httpRoutes :value:index}}
 backend {{=value.name}}
     {{? value.redirect}}
@@ -41,4 +40,10 @@ backend {{=value.name}}
 	server {{=value.name}} 127.0.0.1:{{=value.port}}
 {{~}}
 
+{{~it.tcpRoutes :value:index}}
+listen {{=value.name}}
+    bind *:{{=value.source}}
+    mode tcp
+    server {{=value.name}} 127.0.0.1:{{=value.target}}
+{{~}}
 `;

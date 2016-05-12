@@ -15,12 +15,27 @@ defaults
 frontend http
     bind *:80
     mode http
-    {{~it.routes :value:index}}
-    use_backend {{=value.name}} if { hdr_end(host) -i {{=value.domain}} }
+    {{~it.httpRoutes :value:index}}
+    {{? value.http || value.redirect}}
+    use_backend {{=value.name}} if { path_beg {{=value.pathname}} {{?value.domain}} && hdr_end(host) -i {{=value.domain}} {{?}}} 
+    {{?}}
     {{~}}
 
-{{~it.routes :value:index}}
+frontend https
+    bind *:81
+    mode http
+    {{~it.httpRoutes :value:index}}
+    {{? value.https}}
+    use_backend {{=value.name}} if { path_beg {{=value.pathname}} {{?value.domain}} && hdr_end(host) -i {{=value.domain}} {{?}}} 
+    {{?}}
+    {{~}}
+
+
+{{~it.httpRoutes :value:index}}
 backend {{=value.name}}
+    {{? value.redirect}}
+    redirect scheme https if !{ ssl_fc }
+    {{?}}
 	option forwardfor
 	option originalto
 	server {{=value.name}} 127.0.0.1:{{=value.port}}

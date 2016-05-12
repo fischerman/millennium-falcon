@@ -3,6 +3,7 @@ var fs = require('fs');
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
 var util = require('util');
+let parseUrl = require('url').parse;
 var Rx = require('rx');
 let doT = require('dot');
 doT.templateSettings.strip = false;
@@ -77,23 +78,47 @@ function readDockerContainers(cb) {
 }
 
 function processContainerInformation(dockerState) {
-	let routes = [];
+	let httpRoutes = [];
 	dockerState.forEach((container) => {
-		if(container.Labels["de.bfischerman.proxy-domain"]) {
-			container.Ports.forEach((port) => {
-				if(port.PrivatePort.toString() == container.Labels["de.bfischerman.proxy-port"]) {
-					let route = {
-						name: container.Id,
-						domain: container.Labels["de.bfischerman.proxy-domain"],
-						port: port.PublicPort.toString()
-					};
-					routes.push(route);
-				}
-			})	
+		var lbl = function(name) {
+			return container.Labels[`de.bfischerman.proxy-${name}`];
+		};
+		if(lbl("mode") == "tcp") {
+
+
+		} else if(lbl("mode") == "http" || lbl("url")) {
+			let url = parseUrl('http://' + lbl("url"), true, true);
+			let protocol = lbl("protocol") || 'default';
+			console.log(url);
+			let port;
+			if(lbl("port")) {
+				container.Ports.forEach((containerPort) => {
+					if(containerPort.PrivatePort.toString() == lbl("port")) {
+						port = containerPort;
+					}
+				});
+			} else if(container.Ports.length == 1) {
+				port = container.ports[0];
+			} else {
+				console.log("More than one ports available!");
+			}
+			if(port) {
+				let route = {
+					name: container.Id,
+					domain: url.hostname != '' ? url.hostname : null,
+					pathname: url.pathname,
+					port: port.PublicPort.toString(),
+					protocol: protocol,
+					http: protocol == 'http' || protocol == 'both' || protocol == 'default',
+					https: protocol == 'https' || protocol == 'both',
+					redirect: lbl("redirect-http") == 'true' || !lbl("redirect-http")
+				};
+				httpRoutes.push(route);
+			}	
 		}
 	});
 	return {
-		routes: routes
+		httpRoutes: httpRoutes
 	};
 }
 

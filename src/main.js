@@ -14,16 +14,6 @@ let dockerContainerSubject = new Rx.Subject();
 let proxyStateChangedSubject = new Rx.Subject();
 let previousProxyState = null;
 
-
-
-
-exec('letsencrypt -n', {}, (err, stdout, stderr) => {
-	if(err) {
-		console.error(stdout, stderr);
-		//throw err;
-	}
-});
-
 setInterval(refreshDockerState, 5000);
 refreshDockerState();
 

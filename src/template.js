@@ -1,37 +1,40 @@
 module.exports = `
 defaults
     log     global
-    mode    http
     option  httplog
     option  dontlognull
     timeout connect 5000
     timeout client  50000
     timeout server  50000
-    stats enable
-    stats uri /stats
-    stats realm Haproxy\ Statistics
-    stats auth admin:pa$$Word
-
+    
+{{?it.httpPort}}
 frontend http
-    bind *:80
+    bind *:{{=it.httpPort}}
     mode http
     {{~it.httpRoutes :value:index}}
     {{? value.http || value.redirect}}
     use_backend {{=value.name}} if { path_beg {{=value.pathname}} {{?value.domain}} && hdr_end(host) -i {{=value.domain}} {{?}}} 
     {{?}}
     {{~}}
+{{?}}
 
+{{?it.httpsPort}}
 frontend https
-    bind *:81
+    bind *:{{=it.httpsPort}}
     mode http
     {{~it.httpRoutes :value:index}}
     {{? value.https}}
     use_backend {{=value.name}} if { path_beg {{=value.pathname}} {{?value.domain}} && hdr_end(host) -i {{=value.domain}} {{?}}} 
     {{?}}
     {{~}}
+    {{?it.statsPass}}
+    use_backend stats if { path_beg /stats }
+    {{?}}
+{{?}}
 
 {{~it.httpRoutes :value:index}}
 backend {{=value.name}}
+    mode http
     {{? value.redirect}}
     redirect scheme https if !{ ssl_fc }
     {{?}}
@@ -39,6 +42,15 @@ backend {{=value.name}}
 	option originalto
 	server {{=value.name}} 127.0.0.1:{{=value.port}}
 {{~}}
+
+{{?it.statsPass}}
+backend stats
+    mode http
+    stats enable
+    stats uri /stats
+    stats realm Haproxy\ Statistics
+    stats auth {{=it.statsUser}}:{{=it.statsPass}}
+{{?}}
 
 {{~it.tcpRoutes :value:index}}
 listen {{=value.name}}

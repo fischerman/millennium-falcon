@@ -13,6 +13,7 @@ let ha_cp;
 let dockerContainerSubject = new Rx.Subject();
 let proxyStateChangedSubject = new Rx.Subject();
 let previousProxyState = null;
+let env = process.env;
 
 setInterval(refreshDockerState, 5000);
 refreshDockerState();
@@ -130,7 +131,11 @@ function processContainerInformation(dockerState) {
 	});
 	return {
 		httpRoutes: httpRoutes,
-		tcpRoutes: tcpRoutes
+		tcpRoutes: tcpRoutes,
+		httpPort: env["HTTP_PORT"] == "disable" ? false : (env["HTTP_PORT"] || "80"),
+		httpsPort: env["HTTPS_PORT"] == "disable" ? false : (env["HTTPS_PORT"] || "81"),
+		statsPass: env["STATS_PASS"] || false,
+		statsUser: env["STATS_USER"] || "admin"
 	};
 }
 

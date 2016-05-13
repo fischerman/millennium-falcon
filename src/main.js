@@ -133,7 +133,7 @@ function processContainerInformation(dockerState) {
 		httpRoutes: httpRoutes,
 		tcpRoutes: tcpRoutes,
 		httpPort: env["HTTP_PORT"] == "disable" ? false : (env["HTTP_PORT"] || "80"),
-		httpsPort: env["HTTPS_PORT"] == "disable" ? false : (env["HTTPS_PORT"] || "81"),
+		httpsPort: env["HTTPS_PORT"] == "disable" ? false : (env["HTTPS_PORT"] || "443"),
 		statsPass: env["STATS_PASS"] || false,
 		statsUser: env["STATS_USER"] || "admin"
 	};

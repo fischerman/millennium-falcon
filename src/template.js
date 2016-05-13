@@ -1,4 +1,9 @@
 module.exports = `
+global
+
+    ssl-default-bind-options no-sslv3
+    ssl-default-bind-ciphers kEECDH+aRSA+AES:kRSA+AES:+AES256:RC4-SHA:!kEDH:!LOW:!EXP:!MD5:!aNULL:!eNULL
+
 defaults
     log     global
     option  httplog
@@ -20,7 +25,7 @@ frontend http
 
 {{?it.httpsPort}}
 frontend https
-    bind *:{{=it.httpsPort}}
+    bind *:{{=it.httpsPort}} ssl crt /certs/combined.pem
     mode http
     {{~it.httpRoutes :value:index}}
     {{? value.https}}

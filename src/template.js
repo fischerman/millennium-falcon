@@ -30,6 +30,8 @@ frontend http
 frontend https
     bind *:{{=it.httpsPort}} ssl crt /certs/combined.pem
     mode http
+    reqadd X-Forwarded-Proto:\\ https
+    reqadd X-Forwarded-Ssl:\\ on
     {{~it.httpRoutes :value:index}}
     {{? value.https}}
     use_backend {{=value.name}} if { path_beg {{=value.pathname}} {{?value.domain}} && hdr_end(host) -i {{=value.domain}} {{?}}} 

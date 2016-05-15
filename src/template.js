@@ -21,6 +21,9 @@ frontend http
     use_backend {{=value.name}} if { path_beg {{=value.pathname}} {{?value.domain}} && hdr_end(host) -i {{=value.domain}} {{?}}} 
     {{?}}
     {{~}}
+    {{~it.staticRoutes :value:index}}
+    {{=value.frontHTTP}}
+    {{~}}
 {{?}}
 
 {{?it.httpsPort}}
@@ -35,6 +38,9 @@ frontend https
     {{?it.statsPass}}
     use_backend stats if { path_beg /stats }
     {{?}}
+    {{~it.staticRoutes :value:index}}
+    {{=value.frontHTTP}}
+    {{~}}
 {{?}}
 
 {{~it.httpRoutes :value:index}}
@@ -46,6 +52,10 @@ backend {{=value.name}}
 	option forwardfor
 	option originalto
 	server {{=value.name}} 127.0.0.1:{{=value.port}}
+{{~}}
+
+{{~it.staticRoutes :value:index}}
+{{=value.backend}}
 {{~}}
 
 {{?it.statsPass}}

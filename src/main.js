@@ -3,8 +3,10 @@ var fs = require('fs');
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
 var util = require('util');
+var fs = require('fs');
 let parseUrl = require('url').parse;
 var Rx = require('rx');
+let async = require('async');
 let doT = require('dot');
 doT.templateSettings.strip = false;
 let template = require('./template.js');
@@ -12,20 +14,26 @@ let templateFn = doT.template(template);
 let ha_cp;
 let dockerContainerSubject = new Rx.Subject();
 let proxyStateChangedSubject = new Rx.Subject();
+let staticRoutesSubject = new Rx.Subject();
 let previousProxyState = null;
 let env = process.env;
+let dockerState;
+let staticRoutes;
 
 setInterval(refreshDockerState, 5000);
 refreshDockerState();
 
-dockerContainerSubject.subscribe((dockerState) => {
-	let proxyState = processContainerInformation(dockerState);
-	let serializedState = JSON.stringify(proxyState);
-	if(serializedState != previousProxyState) {
-		console.log('configuration changed');
-		previousProxyState = serializedState;
-		proxyStateChangedSubject.onNext(proxyState);
-	}
+setInterval(refreshStaticRoutes, 5000);
+refreshStaticRoutes();
+
+dockerContainerSubject.subscribe((newDockerState) => {
+	dockerState = newDockerState;
+	updateProxyState();
+});
+
+staticRoutesSubject.subscribe((newStaticRoutes) => {
+	staticRoutes = newStaticRoutes;
+	updateProxyState();
 });
 
 proxyStateChangedSubject.subscribe((proxyState) => {
@@ -40,6 +48,24 @@ proxyStateChangedSubject.subscribe((proxyState) => {
 		}
 	});
 });
+
+function updateProxyState() {
+	if(dockerState && staticRoutes) {
+		let proxyState = generateProxyState(dockerState, staticRoutes);
+		let serializedState = JSON.stringify(proxyState);
+		if(serializedState != previousProxyState) {
+			console.log('configuration changed');
+			previousProxyState = serializedState;
+			proxyStateChangedSubject.onNext(proxyState);
+		}
+	}
+}
+
+function refreshStaticRoutes() {
+	readStaticRoutesFromDisk((staticRoutes) => {
+		staticRoutesSubject.onNext(staticRoutes);
+	});
+}
 
 function refreshDockerState() {
 	readDockerContainers((dockerState) => {
@@ -68,7 +94,29 @@ function readDockerContainers(cb) {
 	});
 }
 
-function processContainerInformation(dockerState) {
+function readStaticRoutesFromDisk(cb) {
+	let routeFileNameEnding = ".route.json";
+	fs.readdir('/routes', (err, files) => {
+		if(err) {
+			throw err;
+		}
+		let routeFileNames = files.filter((file) => { 
+			return file.substring(file.length - routeFileNameEnding.length) === routeFileNameEnding;
+		});
+		routeFileNames = routeFileNames.map((fileName) => {
+			return '/routes/' + fileName;
+		});
+		async.map(routeFileNames, readAsync, (err, routeFileContents) => {
+			if(err) {
+				throw err;
+			}
+			let routes = routeFileContents.map(JSON.parse);
+			cb(routes);
+		});
+	});
+}
+
+function generateProxyState(dockerState, staticRoutes) {
 	let httpRoutes = [];
 	let tcpRoutes = [];
 	dockerState.forEach((container) => {
@@ -132,6 +180,7 @@ function processContainerInformation(dockerState) {
 	return {
 		httpRoutes: httpRoutes,
 		tcpRoutes: tcpRoutes,
+		staticRoutes: staticRoutes,
 		httpPort: env["HTTP_PORT"] == "disable" ? false : (env["HTTP_PORT"] || "80"),
 		httpsPort: env["HTTPS_PORT"] == "disable" ? false : (env["HTTPS_PORT"] || "443"),
 		statsPass: env["STATS_PASS"] || false,
@@ -150,6 +199,10 @@ function writeConfig(proxyState, cb) {
 			throw err;
 		cb(err);
 	});
+}
+
+function readAsync(file, callback) {
+    fs.readFile(file, 'utf8', callback);
 }
 
 process.on('SIGINT', () => {

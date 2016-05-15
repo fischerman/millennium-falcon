@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "dot": "^1.0.3",
-    "rx": "^4.1.0"
+    "rx": "^4.1.0",
+    "async": "2.0.0-rc.4" 
   }
 }

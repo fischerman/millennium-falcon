@@ -1,0 +1,5 @@
+{
+	"backend": "backend exchange\nredirect scheme https if !{ ssl_fc }\noption forwardfor\noption originalto\nserver test localhost:1234",
+	"frontHTTP": "acl is_owa path_beg /owa\nuse_backend exchange if is_owa",
+	"frontHTTPS": "acl is_owa path_beg /owa\nuse_backend exchange if is_owa"
+}

@@ -22,4 +22,4 @@ clean:
 	${RM} ${GOPKG}/${GOBIN}
 
 run: docker
-	docker run --rm -it -v /var/run/docker.sock:/var/run/docker.sock --name docker_proxy docker_proxy
+	docker run --rm -it -v /var/run/docker.sock:/var/run/docker.sock --net=host -e "HTTP_PORT=8080" -e "STATS_USER=admin" -e "STATS_PASS=secret" -e "STATS_PORT=9000" --name docker_proxy docker_proxy

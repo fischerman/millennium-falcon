@@ -26,9 +26,27 @@ frontend stats
 	stats auth {{.StatsUser}}:{{.StatsPass}}
 {{- end}}
 
-{{with .HttpPort -}}
+{{if .HttpEnabled}}
 frontend http
-	bind *:{{.}}
+	bind *:{{.HttpPort}}
 	mode http
-{{- end}}
+
+	{{range .HttpRoutes}}
+	use_backend {{.Name}} if { path_beg {{.Pathname}} {{.Domain}} && hdr_end(host) -i {{.Domain}} }
+	{{end}}
+{{end}}
+
+{{if .HttpsEnabled}}
+frontend https
+	bind *:{{.HttpsPort}}
+	mode http
+{{end}}
+
+{{range .HttpRoutes}}
+backend {{.Name}}
+	mode http
+	option forwardfor
+	option originalto
+	server {{.Name}} 127.0.0.1:{{.Port}}
+{{end}}
 `

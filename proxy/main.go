@@ -19,13 +19,6 @@ const debug = false
 func init() {
 	signalQueue = make(chan os.Signal, 1)
 	signal.Notify(signalQueue, syscall.SIGHUP, os.Interrupt)
-
-	ha_config.HttpPort = os.Getenv("HTTP_PORT")
-	ha_config.HttpsPort = os.Getenv("HTTPS_PORT")
-	ha_config.StatsUser = os.Getenv("STATS_USER")
-	ha_config.StatsPass = os.Getenv("STATS_PASS")
-	ha_config.StatsPort = os.Getenv("STATS_PORT")
-	ha_config.StatsEnabled = len(ha_config.StatsPass) > 0
 }
 
 func main() {

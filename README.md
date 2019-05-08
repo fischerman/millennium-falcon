@@ -1,4 +1,6 @@
-# Millennium Falcon 
+# Millennium Falcon
+
+> ## This repository is unmaintained. Use at your own risk!
 
 This container listens on the Docker socket and configures an HAProxy based on labels attached to the containers.
 
